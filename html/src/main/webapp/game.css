@@ -1,0 +1,5 @@
+#playn-root {
+  display: inline-block;
+  border: 4px inset red;
+  background-color: #000000;
+}

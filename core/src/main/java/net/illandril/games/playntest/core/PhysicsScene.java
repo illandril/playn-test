@@ -92,8 +92,8 @@ public abstract class PhysicsScene extends Scene {
   }
 
   protected final void lookAt(Vec2 position) {
-    Vec2 halfScreen = screenToWorldSize(graphics().screenWidth() / -2.0f,
-        graphics().screenHeight() / 2.0f);
+    Vec2 halfScreen = screenToWorldSize(graphics().width() / -2.0f,
+        graphics().height() / 2.0f);
     camera.set(position).addLocal(halfScreen);
   }
 
