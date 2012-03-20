@@ -1,6 +1,7 @@
 package net.illandril.games.playntest.core;
 
-import static playn.core.PlayN.graphics;
+import net.illandril.games.playntest.core.characters.Mario;
+
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
@@ -9,7 +10,8 @@ import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
 
 public class TestScene extends PhysicsScene {
-
+  
+  private Mario m;
   private Body p;
   private Vec2 pointerScreenPos;
   
@@ -26,7 +28,7 @@ public class TestScene extends PhysicsScene {
       Body b = world.createBody(def);
       FixtureDef fd = new FixtureDef();
       CircleShape shape = new CircleShape();
-      shape.m_radius = 2.5f;
+      shape.m_radius = 10f;
       fd.shape = shape;
       b.createFixture(fd);
     }
@@ -36,9 +38,12 @@ public class TestScene extends PhysicsScene {
     p = world.createBody(def);
     FixtureDef fd = new FixtureDef();
     CircleShape shape = new CircleShape();
-    shape.m_radius = 2.5f;
+    shape.m_radius = 10f;
     fd.shape = shape;
     p.createFixture(fd);
+    
+    m = new Mario(p.getWorldCenter());
+    addToCameraLayer(m.layer);
   }
 
   @Override
@@ -64,14 +69,16 @@ public class TestScene extends PhysicsScene {
       Vec2 target = screenToWorldPosition(pointerScreenPos.x, pointerScreenPos.y);
       Vec2 ppos = p.getWorldCenter();
       Vec2 vel = target.sub(ppos);
-      System.out.println(vel);
       vel.normalize();
-      vel.mulLocal(40);
+      vel.mulLocal(140);
       p.setLinearVelocity(vel);
     } else {
       p.setLinearVelocity(new Vec2(0,0));
     }
     super.update(delta);
+//    System.out.println(p.getWorldCenter());
     lookAt(p.getWorldCenter());
+    m.setPosition(p.getWorldCenter());
+    m.update(delta);
   }
 }

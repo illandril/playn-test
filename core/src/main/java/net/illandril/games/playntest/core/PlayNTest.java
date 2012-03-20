@@ -8,70 +8,17 @@ import static playn.core.PlayN.touch;
 import static playn.core.PlayN.log;
 import playn.core.Canvas;
 import playn.core.CanvasImage;
-import playn.core.Game;
 import playn.core.Image;
 import playn.core.ImageLayer;
 
-public class PlayNTest implements Game {
-
-  private int WIDTH = 990;
-  private int HEIGHT = 700;
-
-  private Canvas textArea;
-  private float fps = 60;
-  private Scene activeScene;
-
+public class PlayNTest extends Game {
   @Override
-  public void init() {
-    Image bgImage = assets().getImage("images/bg.png");
-    ImageLayer bgLayer = graphics().createImageLayer(bgImage);
-    graphics().rootLayer().add(bgLayer);
-    log().error(graphics().screenWidth() + "x" + graphics().screenWidth());
-    graphics().setSize(WIDTH, HEIGHT);
-
-    setActiveScene(new TestScene());
-    {
-      CanvasImage image = graphics().createImage(150, 50);
-      textArea = image.canvas();
-      textArea.setStrokeWidth(2);
-      textArea.setStrokeColor(0xffff0000);
-      textArea.drawText("Hi", 10, 10);
-      ImageLayer layer = graphics().createImageLayer(image);
-      layer.setTranslation(75, 25);
-      graphics().rootLayer().add(layer);
-    }
+  protected void loadFirstScene() {
+    SpriteSheet.get("smbsheet");
+//    for( int i = 0; i < 3000; i++) {
+//      assets().getImage("missing" + i + ".png");
+//    }
+    loadScene(new TestScene());
   }
 
-  private void setActiveScene(Scene newScene) {
-    Scene lastScene = activeScene;
-    activeScene = newScene;
-    if (lastScene != null) {
-      graphics().rootLayer().remove(lastScene.sceneRoot);
-    }
-    newScene.initialize();
-    graphics().rootLayer().add(newScene.sceneRoot);
-    keyboard().setListener(newScene);
-    pointer().setListener(newScene);
-    // touch().setListener(newScene);
-  }
-
-  @Override
-  public void paint(float alpha) {
-    activeScene.paint(alpha);
-  }
-
-  @Override
-  public void update(float delta) {
-    fps = fps * 0.9f + (1000.0f / delta) * 0.1f;
-    // log().debug("FPS: " + fps);
-    textArea.clear();
-    textArea.drawText(Integer.toString(Math.round(fps)) + " FPS (delta: " + Float.toString(delta)
-        + ")", 10, 10);
-    activeScene.update(delta);
-  }
-
-  @Override
-  public int updateRate() {
-    return 0;
-  }
 }

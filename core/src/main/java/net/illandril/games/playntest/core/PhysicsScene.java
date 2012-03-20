@@ -8,16 +8,17 @@ import org.jbox2d.dynamics.World;
 
 import playn.core.CanvasLayer;
 import playn.core.DebugDrawBox2D;
+import playn.core.Keyboard.TypedEvent;
 
 public abstract class PhysicsScene extends Scene {
-
+  protected final static int DEBUG_DEPTH = 1000;
   protected final static boolean ALLOW_DEBUG = true;
 
   private final static Vec2 DEFAULT_GRAVITY = new Vec2(0.0f, -9.8f);
   private final static float STEP_SIZE = 1 /* second *// 30.0f /* PhysUpdatesPerSec */;
   private final static int VELOCITY_ITERATIONS = 10;
   private final static int POSITION_ITERATIONS = 10;
-  private final static float DEFAULT_METERS_PER_PIXEL = 10.0f;
+  private final static float DEFAULT_METERS_PER_PIXEL = 1.0f;
 
   private final float metersPerPixel;
   private final float pixelsPerMeter;
@@ -26,11 +27,8 @@ public abstract class PhysicsScene extends Scene {
   protected boolean showDebug = ALLOW_DEBUG;
   protected World world;
   protected DebugDrawBox2D debugDraw;
+  private CanvasLayer debugLayer;
 
-  /**
-   * The top-left corner of the viewing area
-   */
-  private Vec2 camera = new Vec2(0.0f, 0.0f);
 
   /**
    * Elapsed seconds that have not yet been used for physics calculations
@@ -51,7 +49,7 @@ public abstract class PhysicsScene extends Scene {
     world = new World(gravity, true /* allowSleep */);
     if (ALLOW_DEBUG) {
       debugDraw = new DebugDrawBox2D();
-      debugDraw.setFlipY(true);
+      debugDraw.setFlipY(false);
       debugDraw.setStrokeAlpha(100);
       debugDraw.setFillAlpha(75);
       debugDraw.setStrokeWidth(metersPerPixel);
@@ -60,10 +58,10 @@ public abstract class PhysicsScene extends Scene {
       debugDraw.setFlags(DebugDraw.e_shapeBit | DebugDraw.e_jointBit | DebugDraw.e_aabbBit
           | DebugDraw.e_centerOfMassBit | DebugDraw.e_pairBit);
 
-      CanvasLayer layer = graphics().createCanvasLayer(graphics().width(), graphics().height());
-      layer.setDepth(10000);
-      debugDraw.setCanvas(layer);
-      sceneRoot.add(layer);
+      debugLayer = graphics().createCanvasLayer(graphics().width(), graphics().height());
+      debugLayer.setDepth(CAMERA_DEPTH + DEBUG_DEPTH);
+      debugDraw.setCanvas(debugLayer);
+      addToStaticLayer(debugLayer);
 
       world.setDebugDraw(debugDraw);
     }
@@ -73,10 +71,12 @@ public abstract class PhysicsScene extends Scene {
   protected abstract void populateWorld();
 
   public void paint(float alpha) {
-    if (showDebug) {
-      debugDraw.setCamera(camera.x, camera.y, metersPerPixel);
+    if (ALLOW_DEBUG) {
       debugDraw.getCanvas().canvas().clear();
-      world.drawDebugData();
+      if (showDebug) {
+        debugDraw.setCamera(cameraX(), cameraY(), metersPerPixel);
+        world.drawDebugData();
+      }
     }
   }
 
@@ -86,17 +86,27 @@ public abstract class PhysicsScene extends Scene {
 
   protected final Vec2 screenToWorldPosition(float screenX, float screenY) {
     Vec2 worldPos = screenToWorldSize(screenX, screenY);
-    worldPos.y = worldPos.y * -1;
-    worldPos.addLocal(camera);
+//    worldPos.y = worldPos.y * -1;
+    worldPos.addLocal(cameraX(), cameraY());
     return worldPos;
   }
 
   protected final void lookAt(Vec2 position) {
     Vec2 halfScreen = screenToWorldSize(graphics().width() / -2.0f,
-        graphics().height() / 2.0f);
-    camera.set(position).addLocal(halfScreen);
+        graphics().height() / -2.0f);
+    super.setCamera(halfScreen.addLocal(position));
   }
 
+  @Override
+  public void onKeyTyped(TypedEvent event) {
+    super.onKeyTyped(event);
+    if (ALLOW_DEBUG) {
+      if ( event.typedChar() == 'd') {
+        showDebug = !showDebug;
+      }
+    }
+
+  }
   public void update(float delta) {
     deltaQueue += (delta / 1000);
     while (deltaQueue > STEP_SIZE) {
