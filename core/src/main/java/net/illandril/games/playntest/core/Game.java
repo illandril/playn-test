@@ -3,8 +3,8 @@ package net.illandril.games.playntest.core;
 import static playn.core.PlayN.assets;
 import static playn.core.PlayN.graphics;
 import static playn.core.PlayN.keyboard;
-import static playn.core.PlayN.log;
 import static playn.core.PlayN.pointer;
+import net.illandril.games.playntest.core.Logger;
 import playn.core.Canvas;
 import playn.core.CanvasImage;
 import playn.core.ImageLayer;
@@ -12,7 +12,7 @@ import playn.core.ImageLayer;
 public abstract class Game implements playn.core.Game {
 
   private LoadingScene loadingScene;
-  private int MAX_ACTIVE_SCENES = 20;
+  private int MAX_ACTIVE_SCENES = 8;
   private Scene[] activeScenes;
   private int topScene = -1;
   private boolean loading = true;
@@ -25,9 +25,7 @@ public abstract class Game implements playn.core.Game {
 
   @Override
   public final void init() {
-    log().error(graphics().screenWidth() + "x" + graphics().screenWidth());
     graphics().setSize(WIDTH, HEIGHT);
-    log().error(graphics().screenWidth() + "x" + graphics().screenWidth());
     activeScenes = new Scene[MAX_ACTIVE_SCENES];
     loadingScene = new LoadingScene(this);
     loadingScene.initialize(graphics().rootLayer(), MAX_ACTIVE_SCENES);
@@ -49,41 +47,34 @@ public abstract class Game implements playn.core.Game {
   protected abstract void loadFirstScene();
 
   public void loadScene(Scene newScene) {
-    log().debug("loading scene...");
     if (topScene == -1 || activeScenes[topScene] != newScene) {
       topScene++;
       if (topScene >= MAX_ACTIVE_SCENES) {
-        log().error("TOO MANY SCENES!");
+        Logger.error("playntest.core.Game", "Too many scenes");
         return;
       }
       activeScenes[topScene] = newScene;
-      log().debug("Top Scene:" + Integer.toString(topScene));
     }
     newScene.initialize(graphics().rootLayer(), topScene);
-    if (newScene.isInitialized() && assets().isDone()) {
+    if (LoadingScene.isSceneReady(newScene)) {
       loading = false;
       hideScene(loadingScene);
       keyboard().setListener(newScene);
       pointer().setListener(newScene);
       // touch().setListener(newScene);
-      log().debug("loaded scene");
     } else {
       loading = true;
       loadingScene.monitorScene(newScene);
-      loadingScene.initialize(graphics().rootLayer(), MAX_ACTIVE_SCENES);
-      log().debug("loaded loading scene");
     }
   }
 
   public void hideScene(Scene scene) {
-    log().debug("hiding scene");
     if (activeScenes[topScene] == scene) {
       activeScenes[topScene] = null;
       topScene--;
       loadScene(activeScenes[topScene]);
     }
     scene.deactivateScene();
-    log().debug("hid scene");
   }
 
   @Override

@@ -2,7 +2,6 @@ package net.illandril.games.playntest.core;
 
 import static playn.core.PlayN.assets;
 import static playn.core.PlayN.json;
-import static playn.core.PlayN.log;
 
 import java.util.HashMap;
 import java.util.Vector;
@@ -69,16 +68,19 @@ public class SpriteSheet implements ResourceCallback<String> {
   }
 
   public void updateLayer(ImageLayer layer, String key, String subKey, float offset) {
-    log().debug(key + "--" + subKey);
     HashMap<String, SpriteArray> spriteArrays = sprites.get(key);
     if (spriteArrays != null) {
       SpriteArray spriteArray = spriteArrays.get(subKey);
       if (spriteArray != null) {
-        offset = offset % spriteArray.displayMilliseconds;
         int index = -1;
-        while (offset >= 0) {
-          index++;
-          offset -= spriteArray.sprites.get(index).displayMilliseconds;
+        if (spriteArray.sprites.size() == 0) {
+          index = 0;
+        } else {
+          offset = offset % spriteArray.displayMilliseconds;
+          while (offset >= 0) {
+            index++;
+            offset -= spriteArray.sprites.get(index).displayMilliseconds;
+          }
         }
         Sprite sprite = spriteArray.sprites.get(index);
         layer.setImage(image);
@@ -102,9 +104,9 @@ public class SpriteSheet implements ResourceCallback<String> {
         Object spAO = subObject.getObject(subKey);
         int bw = spAO.getInt("bw");
         int bh = spAO.getInt("bh");
-        int bx = spAO.getInt("bx");
-        int by = spAO.getInt("by");
-        int bt = spAO.getInt("bt");
+        int bx = spAO.getInt("bx", 0);
+        int by = spAO.getInt("by", 0);
+        int bt = spAO.getInt("bt", 1000);
         SpriteArray array = new SpriteArray();
         Array a = spAO.getArray("sprites");
         int len = a.length();

@@ -14,14 +14,19 @@ public abstract class PhysicsScene extends Scene {
   protected final static int DEBUG_DEPTH = 1000;
   protected final static boolean ALLOW_DEBUG = true;
 
-  private final static Vec2 DEFAULT_GRAVITY = new Vec2(0.0f, -9.8f);
+  private final static Vec2 DEFAULT_GRAVITY = new Vec2(0.0f, 9.8f);
   private final static float STEP_SIZE = 1 /* second *// 30.0f /* PhysUpdatesPerSec */;
   private final static int VELOCITY_ITERATIONS = 10;
   private final static int POSITION_ITERATIONS = 10;
-  private final static float DEFAULT_METERS_PER_PIXEL = 1.0f;
 
-  private final float metersPerPixel;
-  private final float pixelsPerMeter;
+  // 6 feet = 1.8288
+  // small mario = 32 pixels
+  // large mario = 64 pixels
+  // So if large mario is 6 ft... 64 / 1.8288 pixels per meter
+  private final static float DEFAULT_PIXELS_PER_METER = 64.0f /* pixels *// 1.8288f /* meter */;
+
+  protected final float pixelsPerMeter;
+  protected final float metersPerPixel;
   private final Vec2 gravity;
 
   protected boolean showDebug = ALLOW_DEBUG;
@@ -29,19 +34,18 @@ public abstract class PhysicsScene extends Scene {
   protected DebugDrawBox2D debugDraw;
   private CanvasLayer debugLayer;
 
-
   /**
    * Elapsed seconds that have not yet been used for physics calculations
    */
   protected float deltaQueue = 0.0f;
 
   protected PhysicsScene() {
-    this(DEFAULT_METERS_PER_PIXEL, DEFAULT_GRAVITY);
+    this(DEFAULT_PIXELS_PER_METER, DEFAULT_GRAVITY);
   }
 
   protected PhysicsScene(float metersPerPixel, Vec2 gravity) {
-    this.metersPerPixel = metersPerPixel;
-    this.pixelsPerMeter = 1 / metersPerPixel;
+    this.pixelsPerMeter = metersPerPixel;
+    this.metersPerPixel = 1 / metersPerPixel;
     this.gravity = gravity;
   }
 
@@ -52,7 +56,7 @@ public abstract class PhysicsScene extends Scene {
       debugDraw.setFlipY(false);
       debugDraw.setStrokeAlpha(100);
       debugDraw.setFillAlpha(75);
-      debugDraw.setStrokeWidth(metersPerPixel);
+      debugDraw.setStrokeWidth(2);
       // debugDraw.setFlags(DebugDraw.e_shapeBit | DebugDraw.e_aabbBit | DebugDraw.e_centerOfMassBit
       // | DebugDraw.e_dynamicTreeBit | DebugDraw.e_jointBit | DebugDraw.e_pairBit);
       debugDraw.setFlags(DebugDraw.e_shapeBit | DebugDraw.e_jointBit | DebugDraw.e_aabbBit
@@ -74,39 +78,47 @@ public abstract class PhysicsScene extends Scene {
     if (ALLOW_DEBUG) {
       debugDraw.getCanvas().canvas().clear();
       if (showDebug) {
-        debugDraw.setCamera(cameraX(), cameraY(), metersPerPixel);
+        debugDraw.setCamera(cameraX() * metersPerPixel, cameraY() * metersPerPixel, pixelsPerMeter);
         world.drawDebugData();
       }
     }
   }
 
   protected final Vec2 screenToWorldSize(float screenX, float screenY) {
-    return new Vec2(screenX / metersPerPixel, screenY / metersPerPixel);
+    return new Vec2(screenX * metersPerPixel, screenY * metersPerPixel);
   }
 
   protected final Vec2 screenToWorldPosition(float screenX, float screenY) {
-    Vec2 worldPos = screenToWorldSize(screenX, screenY);
-//    worldPos.y = worldPos.y * -1;
-    worldPos.addLocal(cameraX(), cameraY());
-    return worldPos;
+    return screenToWorldSize(screenX + cameraX(), screenY + cameraY());
+  }
+
+  protected final Vec2 worldToScreenSize(Vec2 worldPos) {
+    return worldPos.mul(pixelsPerMeter);
+  }
+
+  protected final Vec2 worldToScreenPosition(Vec2 worldPos) {
+    Vec2 newWorldPos = worldToScreenSize(worldPos);
+    newWorldPos.addLocal(-cameraX(), -cameraY());
+    return newWorldPos;
   }
 
   protected final void lookAt(Vec2 position) {
-    Vec2 halfScreen = screenToWorldSize(graphics().width() / -2.0f,
-        graphics().height() / -2.0f);
-    super.setCamera(halfScreen.addLocal(position));
+    Vec2 screenPos = worldToScreenSize(position);
+    screenPos.addLocal(graphics().width() / -2.0f, graphics().height() / -2.0f);
+    setCamera(screenPos);
   }
 
   @Override
   public void onKeyTyped(TypedEvent event) {
     super.onKeyTyped(event);
     if (ALLOW_DEBUG) {
-      if ( event.typedChar() == 'd') {
+      if (event.typedChar() == 'd') {
         showDebug = !showDebug;
       }
     }
 
   }
+
   public void update(float delta) {
     deltaQueue += (delta / 1000);
     while (deltaQueue > STEP_SIZE) {
